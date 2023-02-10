@@ -1,0 +1,101 @@
+-- Query 1: Show total World Population, World Urban Population, World Rural Population, and percent of total population
+-- in Urban and rural areas (For use in world statistics section of dashboard)
+-- select ("Urban population" + "Rural population") as "Total Population", --"Urban population", "Rural population",
+-- round(((("Urban population"*1.0)/("Urban population" + "Rural population"))*100)::decimal,2) as "Percent in Urban Areas",
+-- round(((("Rural population"*1.0)/("Urban population" + "Rural population"))*100)::decimal,2) as "Percent in Rural Areas"
+-- from urbanizationdata
+-- where "Year" = 2020 and "Entity" = 'World'
+
+-------------------------------------------------
+
+-- Query 2: Show countries with the biggest change in percentage of each country's population that lives in
+-- urban areas from 1960 to 2020 (For use in the bar chart section of dashboard)
+-- select a."Entity", a."PercentagePopulationInUrbanAreas" - b."PercentagePopulationInUrbanAreas" as "Percentage Growth in Urban Population (1960-2020)"
+-- from (
+-- select "Entity", round(((("Urban population"*1.0)/("Urban population" + "Rural population"))*100)::decimal,2) as "PercentagePopulationInUrbanAreas"
+-- from urbanizationdata
+-- where "Year" = 1960
+-- ) b join
+-- (select "Entity", round(((("Urban population"*1.0)/("Urban population" + "Rural population"))*100)::decimal,2) as "PercentagePopulationInUrbanAreas"
+-- from urbanizationdata
+-- where "Year" = 2020
+-- ) a
+-- on a."Entity" = b."Entity"
+-- order by "Percentage Growth in Urban Population (1960-2020)" desc
+-- Limit 10
+
+-------------------------------------------------
+
+-- Query 3: Show percentage of each country's population that lives in urban areas in 2020 (for use in map section of dashboard)
+-- select "Entity", round(((("Urban population"*1.0)/("Urban population" + "Rural population"))*100)::decimal,2) as "PercentagePopulationInUrbanAreas"
+-- from urbanizationdata
+-- where "Year" = 2020
+-- Order by "PercentagePopulationInUrbanAreas" desc
+
+-------------------------------------------------
+
+-- Query 4: Show percentage of each country's population that lives in urban areas every year (for use in time series section of dashboard)
+-- select "Entity", "Year", round(((("Urban population"*1.0)/("Urban population" + "Rural population"))*100)::decimal,2) as "PercentagePopulationInUrbanAreas"
+-- from urbanizationdata
+
+-------------------------------------------------
+
+-- Query 5: View Overall Population Growth for each country (not used in dashboard)
+-- select a."Entity", b."2020Population"-a."1960Population" as "Growth in Overall Population (1960-2020)"
+-- from (
+-- 	select "Entity", ("Urban population" + "Rural population") as "2020Population" from urbanizationdata where "Year" = 2020
+-- 	) b join
+-- 	(
+-- 	select "Entity", ("Urban population" + "Rural population") as "1960Population" from urbanizationdata where "Year" = 1960
+-- 	) a on a."Entity" = b."Entity"
+-- --where a."1960Population" > b."2020Population" --Note: returns only countries whose populations have decreased since 1960
+-- Order by "Growth in Overall Population (1960-2020)"
+
+-------------------------------------------------
+
+-- Query 6: Were there any countries whose overall population decreased, but urban population increased? (not used in dashboard)
+
+-- step 1: creating a view of the above query so we can quary only countries whose population has decreased since 1960
+-- Create view decliningpopulations as
+-- select a."Entity", b."2020Population"-a."1960Population" as "Growth in Overall Population (1960-2020)"
+-- from (
+-- 	select "Entity", ("Urban population" + "Rural population") as "2020Population" from urbanizationdata where "Year" = 2020
+-- 	) b join
+-- 	(
+-- 	select "Entity", ("Urban population" + "Rural population") as "1960Population" from urbanizationdata where "Year" = 1960
+-- 	) a on a."Entity" = b."Entity"
+-- where a."1960Population" > b."2020Population" --makes it only show countries whose populations have decreased since 1960
+
+-- result: returns only four countries: Bulgaria, Croatia, Hungary, and Latvia
+
+-- step 2: query the above view for countries whos urban population is larger than it was in 1960
+-- select a."Entity", a."Urban population" as "2020 Urban Population", b."Urban population" as "1960 Urban Population"
+-- from decliningpopulations x join (
+-- 	select "Entity", "Urban population" from urbanizationdata where "Year" = 1960
+-- 	) b on x."Entity" = b."Entity" join
+-- 	(
+-- 	select "Entity", "Urban population" from urbanizationdata where "Year" = 2020
+-- 	) a on a."Entity" = b."Entity"
+-- where a."Urban population" > b."Urban population"
+
+-- result: also returns only four countries: Bulgaria, Croatia, Hungary, and Latvia
+-- This means that all four countries whose populations declined between 1960 and 2020 still had an increased urban population
+
+-------------------------------------------------
+
+-- Query 7: What countries had a decreased urban population since 1960? (not used in dashboard)
+-- select a."Entity", a."Urban population" as "2020 Urban Population", b."Urban population" as "1960 Urban Population"
+-- from (
+-- 	select "Entity", "Urban population" from urbanizationdata where "Year" = 1960
+-- 	) b join
+-- 	(
+-- 	select "Entity", "Urban population" from urbanizationdata where "Year" = 2020
+-- 	) a on a."Entity" = b."Entity"
+-- where a."Urban population" < b."Urban population"
+
+-- result: returns table with no rows, so no country's urban population has decreased since 1960 (though some countries may have had
+-- a decreased percentage of their population live in urban areas)
+
+-------------------------------------------------
+
+-- Data sourced from https://ourworldindata.org/urbanization
